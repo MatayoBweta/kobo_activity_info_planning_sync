@@ -40,27 +40,7 @@ public class MonthlyReports extends ActivityInfoRow {
         this.indicator = indicator;
         this.atribute = atribute;
 
-        for (StringTokenizer stIndicator = new StringTokenizer(indicator, " | "); stIndicator.hasMoreTokens();) {
-            String token = stIndicator.nextToken();
-            if (token.startsWith("ind") && !token.contains(" ")) {
-                this.indicatorCode = token;
-                break;
-            }
-        }
-        for (StringTokenizer stAttribute = new StringTokenizer(atribute, " | "); stAttribute.hasMoreTokens();) {
-            String token = stAttribute.nextToken();
-            if (token.startsWith("3rpa") && !token.contains(" ")) {
-                this.atributeCode = token;
-                break;
-            }
-        }
-        for (StringTokenizer stSector = new StringTokenizer(sector, " | "); stSector.hasMoreTokens();) {
-            String token = stSector.nextToken();
-            if (token.startsWith("SEC") && !token.contains(" ")) {
-                this.sectorCode = token;
-                break;
-            }
-        }
+        refresh(indicator, atribute, sector);
         this.reportUUID = this.month
                 + "|"
                 + getValue(this.sectorCode)
@@ -68,6 +48,30 @@ public class MonthlyReports extends ActivityInfoRow {
                 + getValue(this.indicatorCode)
                 + "|"
                 + getValue(this.atributeCode);
+    }
+
+    private void refresh(String indicator1, String atribute1, String sector1) {
+        for (StringTokenizer stIndicator = new StringTokenizer(indicator1, " | "); stIndicator.hasMoreTokens();) {
+            String token = stIndicator.nextToken();
+            if (token.startsWith("ind") && !token.contains(" ")) {
+                this.indicatorCode = token;
+                break;
+            }
+        }
+        for (StringTokenizer stAttribute = new StringTokenizer(atribute1, " | "); stAttribute.hasMoreTokens();) {
+            String token = stAttribute.nextToken();
+            if (token.startsWith("3rpa") && !token.contains(" ")) {
+                this.atributeCode = token;
+                break;
+            }
+        }
+        for (StringTokenizer stSector = new StringTokenizer(sector1, " | "); stSector.hasMoreTokens();) {
+            String token = stSector.nextToken();
+            if (token.startsWith("SEC") && !token.contains(" ")) {
+                this.sectorCode = token;
+                break;
+            }
+        }
     }
 
     private String getValue(String string) {
@@ -83,6 +87,13 @@ public class MonthlyReports extends ActivityInfoRow {
     }
 
     public String getReportUUID() {
+        this.reportUUID = this.month
+                + "|"
+                + getValue(this.sectorCode)
+                + "|"
+                + getValue(this.indicatorCode)
+                + "|"
+                + getValue(this.atributeCode);
         return reportUUID;
     }
 
@@ -120,6 +131,7 @@ public class MonthlyReports extends ActivityInfoRow {
 
     public void setSector(String sector) {
         this.sector = sector;
+        refresh(this.indicator, this.atribute, this.sector);
     }
 
     public String getSectorCode() {
@@ -133,12 +145,12 @@ public class MonthlyReports extends ActivityInfoRow {
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 79 * hash + Objects.hashCode(this.uuid);
-        hash = 79 * hash + Objects.hashCode(this.month);
-        hash = 79 * hash + Objects.hashCode(this.sector);
-        hash = 79 * hash + Objects.hashCode(this.indicator);
-        hash = 79 * hash + Objects.hashCode(this.atribute);
+        int hash = 3;
+        hash = 59 * hash + Objects.hashCode(this.uuid);
+        hash = 59 * hash + Objects.hashCode(this.month);
+        hash = 59 * hash + Objects.hashCode(this.sector);
+        hash = 59 * hash + Objects.hashCode(this.indicator);
+        hash = 59 * hash + Objects.hashCode(this.atribute);
         return hash;
     }
 

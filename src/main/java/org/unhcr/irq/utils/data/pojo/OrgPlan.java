@@ -365,16 +365,17 @@ public class OrgPlan extends ActivityInfoRow {
 
     @Override
     public int hashCode() {
-        int hash = 5;
-        hash = 97 * hash + Objects.hashCode(this.planningYear);
-        hash = 97 * hash + Objects.hashCode(this.partner);
-        hash = 97 * hash + Objects.hashCode(this.population_type);
-        hash = 97 * hash + Objects.hashCode(this.country_of_origin);
-        hash = 97 * hash + Objects.hashCode(this.programme_organization);
-        hash = 97 * hash + Objects.hashCode(this.donor_organization);
-        hash = 97 * hash + Objects.hashCode(this.location_type);
-        hash = 97 * hash + Objects.hashCode(this.location);
-        hash = 97 * hash + Objects.hashCode(this.admin_level_3);
+        int hash = 3;
+        hash = 37 * hash + Objects.hashCode(this.planningYear);
+        hash = 37 * hash + Objects.hashCode(this.partner);
+        hash = 37 * hash + Objects.hashCode(this.population_type);
+        hash = 37 * hash + Objects.hashCode(this.country_of_origin);
+        hash = 37 * hash + Objects.hashCode(this.programme_organization);
+        hash = 37 * hash + Objects.hashCode(this.donor_organization);
+        hash = 37 * hash + Objects.hashCode(this.location_type);
+        hash = 37 * hash + Objects.hashCode(this.location);
+        hash = 37 * hash + Objects.hashCode(this.sector);
+        hash = 37 * hash + Objects.hashCode(this.admin_level_3);
         return hash;
     }
 
@@ -411,10 +412,15 @@ public class OrgPlan extends ActivityInfoRow {
         if (!Objects.equals(this.location, other.location)) {
             return false;
         }
+        if (!Objects.equals(this.sector, other.sector)) {
+            return false;
+        }
         if (!Objects.equals(this.admin_level_3, other.admin_level_3)) {
             return false;
         }
         return Objects.equals(this.planningYear, other.planningYear);
     }
+
+   
 
 }

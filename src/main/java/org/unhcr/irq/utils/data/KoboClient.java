@@ -138,7 +138,9 @@ public class KoboClient {
                     url = null;
                 }
             } while (url != null);
-
+            logger.log(Level.INFO, "Plans {0}", global_orgPlans.size());
+            logger.log(Level.INFO, "Reports {0}", global_Monthly_Report.size());
+            logger.log(Level.INFO, "Focal Points {0}", global_FocalPoints.size());
             Map<String, List<OrgPlan>> map = global_orgPlans.stream()
                     .collect(Collectors.groupingBy(d -> d.getSector_name()));
             if (!global_orgPlans.isEmpty() || !global_Monthly_Report.isEmpty() || !global_FocalPoints.isEmpty()) {
@@ -177,6 +179,7 @@ public class KoboClient {
         List<FocalPoints> global_FocalPoints = new ArrayList<>();
         if (results.isArray()) {
             for (JsonNode result : results) {
+                boolean hasData = false;
                 JsonNode _validation_status = result.get("_validation_status");
                 String status = null;
                 if (_validation_status.has("uid")) {
@@ -209,7 +212,7 @@ public class KoboClient {
                             String admin_level_1 = getStringValueFromJson(detail, "section_partner/section_implementation/admin_level_1");
                             String admin_level_2 = getStringValueFromJson(detail, "section_partner/section_implementation/admin_level_2");
                             String admin_level_3 = getStringValueFromJson(detail, "section_partner/section_implementation/admin_level_3", ResourceBundle.getBundle(BUNDLE_PATH).getString("NA"));
-                            logger.info(location);
+
                             JsonNode indicator_group = detail.get("section_partner/section_implementation/indicator_group");
                             JsonNode indicator_3rp_hc_group = detail.get("section_partner/section_implementation/indicator_3rp_hc_group");
                             JsonNode indicator_compass_ref_group = detail.get("section_partner/section_implementation/indicator_compass_ref_group");
@@ -270,7 +273,7 @@ public class KoboClient {
                             for (OrgPlan orgPlan : orgPlans) {
 
                                 orgPlan = enrichThePlan(orgPlan);
-                                logger.info(orgPlan.toString());
+
                                 List<MonthlyReports> monthlyReports = new ArrayList<>();
                                 switch (orgPlan.getPopulation_type()) {
                                     case "PT01" -> {
@@ -311,6 +314,7 @@ public class KoboClient {
                                     }
                                 }
                                 orgPlan.setMonthlyReports(monthlyReports);
+
                             }
 
                             for (OrgPlan orgPlan : orgPlans) {
@@ -320,13 +324,28 @@ public class KoboClient {
                                 }
                                 if (sectorValues.size() > 1) {
                                     toRemove.add(orgPlan);
-                                    for (String sectorValue : sectorValues.keySet()) {
-                                        OrgPlan orgPlan_new = new OrgPlan(orgPlan.getPlanningYear(), orgPlan.getPartner(), orgPlan.getPopulation_type(), orgPlan.getCountry_of_origin(), orgPlan.getProgramme_organization(), orgPlan.getDonor_organization(), orgPlan.getLocation_type(), orgPlan.getLocation(), orgPlan.getAdmin_level_1(), orgPlan.getAdmin_level_2(), orgPlan.getAdmin_level_3(), sectorValue, sectorValues.get(sectorValue));
-                                        orgPlan_new = copyThePlan(orgPlan_new, orgPlan);
-                                        List<MonthlyReports> mrss = orgPlan.getMonthlyReports().stream().filter(c -> c.getSectorCode().equals(orgPlan.getSector())).collect(Collectors.toList());
-                                        mrss.forEach(c -> c.setUuid(orgPlan.getUuid()));
+                                    for (Map.Entry<String, String> entry : sectorValues.entrySet()) {
+                                        String key = entry.getKey();
+                                        String val = entry.getValue();
+                                        final OrgPlan orgPlan_new = new OrgPlan(orgPlan.getPlanningYear(), orgPlan.getPartner(), orgPlan.getPopulation_type(), orgPlan.getCountry_of_origin(), orgPlan.getProgramme_organization(), orgPlan.getDonor_organization(), orgPlan.getLocation_type(), orgPlan.getLocation(), orgPlan.getAdmin_level_1(), orgPlan.getAdmin_level_2(), orgPlan.getAdmin_level_3(), key, val);
+                                        orgPlan_new.setSector(key);
+                                        orgPlan_new.setSector_name(val);
+                                        orgPlan_new.setPartner_name(orgPlan.getPartner_name());
+                                        orgPlan_new.setPopulation_type_name(orgPlan.getPopulation_type_name());
+                                        orgPlan_new.setCountry_of_origin_name(orgPlan.getCountry_of_origin_name());
+                                        orgPlan_new.setProgramme_organization_name(orgPlan.getProgramme_organization_name());
+                                        orgPlan_new.setDonor_organization_name(orgPlan.getDonor_organization_name());
+                                        orgPlan_new.setLocation_name(orgPlan.getLocation_name());
+                                        orgPlan_new.setAdmin_level_1_name(orgPlan.getAdmin_level_1_name());
+                                        orgPlan_new.setAdmin_level_2_name(orgPlan.getAdmin_level_2_name());
+                                        orgPlan_new.setAdmin_level_3_name(orgPlan.getAdmin_level_3_name());
+                                        orgPlan_new.setLocation_type_name(orgPlan.getLocation_type_name());
+                                        List<MonthlyReports> mrss = orgPlan.getMonthlyReports().stream().filter(c -> c.getSectorCode().equals(orgPlan_new.getSector())).collect(Collectors.toList());
+                                        mrss.forEach(c -> c.setUuid(orgPlan_new.getUuid()));
                                         orgPlan_new.setMonthlyReports(mrss);
                                         toAdd.add(orgPlan_new);
+                                        logger.log(Level.INFO, "New {0}", orgPlan_new.toString());
+                                        logger.log(Level.INFO, "-- Details size {0}", orgPlan_new.getMonthlyReports().size());
                                     }
                                 } else if (sectorValues.size() == 1) {
                                     for (Map.Entry<String, String> entry : sectorValues.entrySet()) {
@@ -334,33 +353,35 @@ public class KoboClient {
                                         String val = entry.getValue();
                                         orgPlan.setSector(key);
                                         orgPlan.setSector_name(val);
-                                        List<MonthlyReports> mrss = orgPlan.getMonthlyReports().stream().filter(c -> c.getSectorCode().equals(orgPlan.getSector())).collect(Collectors.toList());
-                                        mrss.forEach(c -> c.setUuid(orgPlan.getUuid()));
-                                        orgPlan.setMonthlyReports(mrss);
-
+                                        orgPlan.getMonthlyReports().forEach(c -> c.setUuid(orgPlan.getUuid()));
                                     }
                                 }
                             }
                             orgPlans.removeAll(toRemove);
                             orgPlans.addAll(toAdd);
-                            for (OrgPlan orgPlan : orgPlans) {
-                                logger.info(orgPlan.toString());
-                                global_Monthly_Report.addAll(orgPlan.getMonthlyReports());
-                                for (MonthlyReports monthlyReport : orgPlan.getMonthlyReports()) {
-                                    logger.log(Level.FINE, "-- {0}", monthlyReport.toString());
-                                }
-                            }
+
                             orgPlans = orgPlans.stream().filter(c -> !c.getMonthlyReports().isEmpty()).distinct().toList();
+                            for (OrgPlan orgPlan : orgPlans) {
+                                global_Monthly_Report.addAll(orgPlan.getMonthlyReports().stream().distinct().toList());
+
+                            }
                             global_orgPlans.addAll(orgPlans);
+                            hasData = hasData || !orgPlans.isEmpty();
                         }
                     }
-                    acceptKoboData(ResourceBundle.getBundle(BUNDLE_PATH).getString("KOBO_URL_PART"), _id);
+                    if (hasData) {
+                        acceptKoboData(ResourceBundle.getBundle(BUNDLE_PATH).getString("KOBO_URL_PART"), _id);
+                    }
                 }
             }
         }
         mainResults.put(PLANNING, global_orgPlans);
-        mainResults.put(MONTHLY_REPORT, global_Monthly_Report);
+        List<MonthlyReports> mrList = global_orgPlans.stream().flatMap(c -> c.getMonthlyReports().stream().distinct()).distinct().toList();
+        logger.log(Level.INFO, "From consolidation {0}", global_Monthly_Report.size());
+        logger.log(Level.INFO, "From OrgPlan {0}", mrList.size());
+        mainResults.put(MONTHLY_REPORT, mrList);
         mainResults.put(FOCAL_POINT, global_FocalPoints);
+
         return mainResults;
     }
     private static final String FOCAL_POINT = "FOCAL_POINT";
@@ -394,18 +415,18 @@ public class KoboClient {
         return orgPlan;
     }
 
-    private static OrgPlan copyThePlan(OrgPlan orgPlan, OrgPlan oldOrgPlan) {
-        orgPlan.setPartner_name(oldOrgPlan.getPartner_name());
-        orgPlan.setPopulation_type_name(oldOrgPlan.getPopulation_type_name());
-        orgPlan.setCountry_of_origin_name(oldOrgPlan.getCountry_of_origin_name());
-        orgPlan.setProgramme_organization_name(oldOrgPlan.getProgramme_organization_name());
-        orgPlan.setDonor_organization_name(oldOrgPlan.getDonor_organization_name());
-        orgPlan.setLocation_name(oldOrgPlan.getLocation_name());
-        orgPlan.setAdmin_level_1_name(oldOrgPlan.getAdmin_level_1_name());
-        orgPlan.setAdmin_level_2_name(oldOrgPlan.getAdmin_level_2_name());
-        orgPlan.setAdmin_level_3_name(oldOrgPlan.getAdmin_level_3_name());
-        orgPlan.setLocation_type_name(oldOrgPlan.getLocation_type_name());
-        return orgPlan;
+    private static OrgPlan copyThePlan(OrgPlan orgPlan_new, OrgPlan orgPlan) {
+        orgPlan_new.setPartner_name(orgPlan.getPartner_name());
+        orgPlan_new.setPopulation_type_name(orgPlan.getPopulation_type_name());
+        orgPlan_new.setCountry_of_origin_name(orgPlan.getCountry_of_origin_name());
+        orgPlan_new.setProgramme_organization_name(orgPlan.getProgramme_organization_name());
+        orgPlan_new.setDonor_organization_name(orgPlan.getDonor_organization_name());
+        orgPlan_new.setLocation_name(orgPlan.getLocation_name());
+        orgPlan_new.setAdmin_level_1_name(orgPlan.getAdmin_level_1_name());
+        orgPlan_new.setAdmin_level_2_name(orgPlan.getAdmin_level_2_name());
+        orgPlan_new.setAdmin_level_3_name(orgPlan.getAdmin_level_3_name());
+        orgPlan_new.setLocation_type_name(orgPlan.getLocation_type_name());
+        return orgPlan_new;
     }
 
     private static String readAttributes() {
