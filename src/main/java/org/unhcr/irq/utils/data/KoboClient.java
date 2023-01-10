@@ -10,6 +10,7 @@ import org.unhcr.irq.utils.data.pojo.OrgPlan;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.jayway.jsonpath.JsonPath;
 import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;
@@ -79,7 +80,6 @@ public class KoboClient {
             i++;
         }
         currenFile.mkdir();
-
         return currenFile;
     }
 
@@ -201,7 +201,7 @@ public class KoboClient {
                         }
                     }
 
-                    if (details.isArray()) {
+                    if (details != null && details.isArray()) {
                         for (JsonNode detail : details) {
                             String programme_organization = getStringValueFromJson(detail, "section_partner/section_implementation/programme_organization");
                             String donor_organization = getStringValueFromJson(detail, "section_partner/section_implementation/donor_organization");
@@ -226,7 +226,6 @@ public class KoboClient {
                                 logger.info(location_type);
                                 for (StringTokenizer stLocation_Type = new StringTokenizer(location_type, " "); stLocation_Type.hasMoreTokens();) {
                                     String tokenLocationType = stLocation_Type.nextToken();
-
                                     if (tokenLocationType.equals("LOCT01") && !location.isBlank()) {
                                         for (StringTokenizer stLocation = new StringTokenizer(location, " "); stLocation.hasMoreTokens();) {
                                             String tokenLocation = stLocation.nextToken();
@@ -235,6 +234,7 @@ public class KoboClient {
                                                     for (StringTokenizer stCountry_Of_Origin = new StringTokenizer(county_of_origin, " "); stCountry_Of_Origin.hasMoreTokens();) {
                                                         String tokenCountry_Of_Origin = stCountry_Of_Origin.nextToken();
                                                         OrgPlan op = new OrgPlan(planningYear, partner_organization, population_type, tokenCountry_Of_Origin, programme_organization, donor_organization, tokenLocationType, tokenLocation, null, null, null);
+
                                                         orgPlans.add(op);
                                                     }
                                                 } else if (!population_type.equals(ResourceBundle.getBundle(BUNDLE_PATH).getString("NA"))) {
@@ -363,7 +363,6 @@ public class KoboClient {
                             orgPlans = orgPlans.stream().filter(c -> !c.getMonthlyReports().isEmpty()).distinct().toList();
                             for (OrgPlan orgPlan : orgPlans) {
                                 global_Monthly_Report.addAll(orgPlan.getMonthlyReports().stream().distinct().toList());
-
                             }
                             global_orgPlans.addAll(orgPlans);
                             hasData = hasData || !orgPlans.isEmpty();
@@ -429,7 +428,7 @@ public class KoboClient {
         return orgPlan_new;
     }
 
-    private static String readAttributes() {
+    public static String readAttributes() {
         if (readAttributes == null) {
             readAttributes = getActivityInfoData(ResourceBundle.getBundle(BUNDLE_PATH).getString("ATTRIBUTES_URL"));
         }
@@ -437,7 +436,7 @@ public class KoboClient {
     }
     private static String readAttributes;
 
-    private static String readPopulationTypes() {
+    public static String readPopulationTypes() {
         if (readPopulationTypes == null) {
             readPopulationTypes = getActivityInfoData(ResourceBundle.getBundle(BUNDLE_PATH).getString("POPULATION_TYPE"));
         }
@@ -445,7 +444,7 @@ public class KoboClient {
     }
     private static String readPopulationTypes;
 
-    private static String readCountries() {
+    public static String readCountries() {
         if (readCountries == null) {
             readCountries = getActivityInfoData(ResourceBundle.getBundle(BUNDLE_PATH).getString("COUNTRY_URL"));
         }
@@ -453,7 +452,7 @@ public class KoboClient {
     }
     private static String readCountries;
 
-    private static String readLocations() {
+    public static String readLocations() {
         if (readLocations == null) {
             readLocations = getActivityInfoData(ResourceBundle.getBundle(BUNDLE_PATH).getString("LOCATION_URL"));
         }
@@ -461,7 +460,7 @@ public class KoboClient {
     }
     private static String readLocations;
 
-    private static String readAdmniLevels() {
+    public static String readAdmniLevels() {
         if (readAdminLevels == null) {
             readAdminLevels = getActivityInfoData(ResourceBundle.getBundle(BUNDLE_PATH).getString("ADMIN_LEVEL_URL"));
         }
@@ -469,7 +468,7 @@ public class KoboClient {
     }
     private static String readAdminLevels;
 
-    private static String readOrgs() {
+    public static String readOrgs() {
         if (readOrganizations == null) {
             readOrganizations = getActivityInfoData(ResourceBundle.getBundle(BUNDLE_PATH).getString("ORGANIZATION_URL"));
         }
@@ -486,17 +485,23 @@ public class KoboClient {
     }
 
     private static List<MonthlyReports> generateReporting(String uuid, String indicator_label, List<MonthlyReports> mrs, String attributes, JsonNode indicator_group, Integer planningYear) {
-
+        logger.log(Level.INFO, "Generate indicators {0}", indicator_label);
         if (indicator_group != null && indicator_group.isArray()) {
             for (JsonNode ind_details : indicator_group) {
                 String indicator_name = getStringValueFromJson(ind_details, "section_partner/section_implementation/" + indicator_label + "_group/" + indicator_label + "_name");
-                List<String> attributesText = JsonPath.read(attributes, "$[?(@['Indicator Key'] == '" + StringEscapeUtils.escapeEcmaScript(indicator_name) + "')]['Attribute Key']");
-                String sector = getAILabel(attributes, StringEscapeUtils.escapeEcmaScript(indicator_name), "$[?(@['Indicator Key'] == '", "')]['Sector Code Name Code Name']");
-                for (String att : attributesText) {
-                    for (int i = 0; i < 12; i++) {
-                        String reportingMonth = getMonthOfExecution(planningYear, i);
-                        MonthlyReports mr = new MonthlyReports(uuid, reportingMonth, indicator_name, att, sector);
-                        mrs.add(mr);
+                String indicator_code = getStringValueFromJson(ind_details, "section_partner/section_implementation/" + indicator_label + "_group/" + indicator_label + "_post");
+
+                if (!indicator_name.isBlank()) {
+                    logger.log(Level.INFO, "Indicator Name {0}", indicator_name);
+                    List<String> attributesText = JsonPath.read(attributes, "$[?(@['Indicator Key'] CONTAINS '" + StringEscapeUtils.escapeEcmaScript(indicator_code) + "')]['Attribute Key']");
+                    String sector = getAILabel(attributes, StringEscapeUtils.escapeEcmaScript(indicator_code), "$[?(@['Indicator Key'] CONTAINS '", "')]['Sector Code Name Code Name']");
+                    logger.log(Level.INFO, "Number of attributes {0}", attributesText.size());
+                    for (String att : attributesText) {
+                        for (int i = 0; i < 12; i++) {
+                            String reportingMonth = getMonthOfExecution(planningYear, i);
+                            MonthlyReports mr = new MonthlyReports(uuid, reportingMonth, indicator_name, att, sector);
+                            mrs.add(mr);
+                        }
                     }
                 }
             }
